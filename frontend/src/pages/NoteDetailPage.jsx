@@ -11,16 +11,13 @@ const NoteDetailPage = () => {
 
   const navigate = useNavigate();
 
-  const { id } = useParams();
-
-  console.log({ id });
+  const { id } = useParams(); // get the id from the URL
 
   useEffect(() => {
     const fetchNote = async () => {
       try {
         const res = await api.get(`/notes/${id}`);
         setNote(res.data);
-        console.log("Note data: ", res.data);
       } catch (error) {
         toast.error("Failed to fetch the note");
       } finally {
@@ -31,22 +28,45 @@ const NoteDetailPage = () => {
     fetchNote();
   }, [id]);
 
-  console.log({ note });
-
-  const handleDelete = () => {
-    // if(){
-    //
-    // }
+  const handleDelete = async () => {
+    if (!window.confirm("Are you sure you want to delete this note?")) return;
+    try {
+      await api.delete(`/notes/${id}`);
+      navigate("/");
+      toast.success("Note deleted successfully");
+    } catch (error) {
+      console.log("Error deleting note: ", error);
+      toast.error("Failed to delete note");
+    }
   };
 
-  const handleSave = () => {};
+  const handleSave = async () => {
+    if (!note.title.trim() || !note.content.trim()) {
+      toast.error("Title and content are required");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await api.put(`/notes/${id}`, note);
+      navigate("/");
+      toast.success("Note updated successfully");
+    } catch (error) {
+      console.log("Error updating note: ", error);
+      toast.error("Failed to update note");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) {
-    return (<div className="min-h-screen bg-base-200 flex items-center justify-center">
-      <LoaderIcon className="animate-spin size-10" />
-    </div>)
+    return (
+      <div className="min-h-screen bg-base-200 flex items-center justify-center">
+        <LoaderIcon className="animate-spin size-10" />
+      </div>
+    );
   }
-
+ 
   return (
     <div className="min-h-screen bg-base-200">
       <div className="container mx-auto px-4 py-8">
@@ -75,9 +95,7 @@ const NoteDetailPage = () => {
                   type="text"
                   className="input input-bordered"
                   value={note.title || ""}
-                  onChange={(e) =>
-                    setNote(note ? { ...note, title: e.target.value } : null)
-                  }
+                  onChange={(e) => setNote({ ...note, title: e.target.value })}
                 />
               </div>
 
@@ -89,7 +107,7 @@ const NoteDetailPage = () => {
                   className="textarea textarea-bordered h-32"
                   value={note.content || ""}
                   onChange={(e) =>
-                    setNote(note ? { ...note, content: e.target.value } : null)
+                    setNote({ ...note, content: e.target.value })
                   }
                 ></textarea>
               </div>
